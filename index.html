@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Vollbild-Video mit Button</title>
+  <title>Vollbild-Video für Kiosk Pro Lite</title>
   <style>
     html, body {
       margin: 0;
@@ -11,75 +11,59 @@
       background: black;
       overflow: hidden;
     }
-
     video {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       object-fit: cover;
+      display: none;
     }
-
-    #controlButton {
+    #overlay {
       position: absolute;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(0, 0, 0, 0.6);
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: black;
       color: white;
-      font-size: 24px;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      z-index: 10;
-    }
-
-    #controlButton:hover {
-      background-color: rgba(255, 255, 255, 0.2);
+      font-size: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 2;
     }
   </style>
 </head>
 <body>
-  <video id="fullscreenVideo" preload="auto">
-    <source src="https://gesellschaft-kultur-geschichte.de/wp-content/uploads/2_Allgemein_160903_final.mp4" type="video/mp4">
-    Dein Browser unterstützt das Video-Tag nicht.
-  </video>
 
-  <button id="controlButton">Start</button>
+<div id="overlay">Zum Starten tippen</div>
 
-  <script>
-    const video = document.getElementById('fullscreenVideo');
-    const button = document.getElementById('controlButton');
+<video id="video" preload="auto">
+  <source src="https://gesellschaft-kultur-geschichte.de/wp-content/uploads/2_Allgemein_160903_final.mp4" type="video/mp4">
+  Dein Browser unterstützt das Video-Tag nicht.
+</video>
 
-    let playing = false;
+<script>
+  const video = document.getElementById('video');
+  const overlay = document.getElementById('overlay');
 
-    function togglePlayback() {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
+  function startVideo() {
+    overlay.style.display = 'none';
+    video.style.display = 'block';
+    video.muted = false;
+    video.volume = 1.0;
+    video.play();
+  }
 
-      if (playing) {
-        video.pause();
-        button.textContent = 'Start';
-      } else {
-        video.play();
-        button.textContent = 'Stopp';
-      }
+  document.addEventListener('touchstart', startVideo, { once: true });
 
-      playing = !playing;
-    }
+  video.addEventListener('ended', () => {
+    video.currentTime = 0;
+    video.pause();
+    video.style.display = 'none';
+    overlay.style.display = 'flex';
+  });
+</script>
 
-    button.addEventListener('click', togglePlayback);
-
-    // Wenn das Video zu Ende ist, zurückspulen und Button zurücksetzen
-    video.addEventListener('ended', () => {
-      video.currentTime = 0;
-      playing = false;
-      button.textContent = 'Start';
-    });
-  </script>
 </body>
 </html>
