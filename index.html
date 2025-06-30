@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Vollbild-Video für Kiosk Pro Lite</title>
+  <title>Video mit Start/Pause für Kiosk Pro Lite</title>
   <style>
     html, body {
       margin: 0;
@@ -10,13 +10,16 @@
       height: 100%;
       background: black;
       overflow: hidden;
+      font-family: sans-serif;
     }
+
     video {
       width: 100vw;
       height: 100vh;
       object-fit: cover;
       display: none;
     }
+
     #overlay {
       position: absolute;
       top: 0;
@@ -29,8 +32,25 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      text-align: center;
       z-index: 2;
+    }
+
+    #pausePlayButton {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 16px 32px;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      font-size: 24px;
+      border-radius: 10px;
+      z-index: 3;
+      display: none;
+    }
+
+    #pausePlayButton:active {
+      background-color: rgba(255, 255, 255, 0.2);
     }
   </style>
 </head>
@@ -43,25 +63,44 @@
   Dein Browser unterstützt das Video-Tag nicht.
 </video>
 
+<div id="pausePlayButton">Pause</div>
+
 <script>
   const video = document.getElementById('video');
   const overlay = document.getElementById('overlay');
+  const button = document.getElementById('pausePlayButton');
 
   function startVideo() {
     overlay.style.display = 'none';
     video.style.display = 'block';
+    button.style.display = 'block';
     video.muted = false;
     video.volume = 1.0;
     video.play();
   }
 
+  // Touchstart zum Starten
   document.addEventListener('touchstart', startVideo, { once: true });
 
+  // Pause / Play Button
+  button.addEventListener('touchstart', function () {
+    if (video.paused) {
+      video.play();
+      button.textContent = 'Pause';
+    } else {
+      video.pause();
+      button.textContent = 'Start';
+    }
+  });
+
+  // Wenn das Video endet, zurück zum Anfang und Overlay anzeigen
   video.addEventListener('ended', () => {
     video.currentTime = 0;
     video.pause();
     video.style.display = 'none';
+    button.style.display = 'none';
     overlay.style.display = 'flex';
+    button.textContent = 'Pause';
   });
 </script>
 
