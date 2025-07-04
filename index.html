@@ -2,162 +2,162 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Video mit Auto-Hide-Button</title>
+  <title>Video mit Auto-Hide-Button + Preview</title>
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: black;
-      overflow: hidden;
-      font-family: sans-serif;
+      margin:0; padding:0; height:100%;
+      background:black; overflow:hidden; font-family:sans-serif;
     }
 
-    video {
-      width: 100vw;
-      height: 100vh;
-      object-fit: cover;
-      display: none;
+    /* Video erst nach Start sichtbar */
+    video{
+      width:100vw; height:100vh; object-fit:cover; display:none;
     }
 
-    #overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background-color: black;
-      color: white;
-      font-size: 32px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 2;
+    /* --- Overlay --- */
+    #overlay{
+      position:absolute; inset:0;
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      z-index:2; color:white; font-size:32px;
+      background:black;         /* Fallback, wird nach Screenshot transparent gesetzt */
+    }
+    #previewImage{
+      position:absolute; inset:0;
+      width:100%; height:100%; object-fit:cover;
+      z-index:-1;               /* liegt hinter dem Text */
+    }
+    #overlayText{
+      padding:10px 20px; border-radius:10px;
+      background:rgba(0,0,0,.6);
     }
 
-    #pausePlayButton, #restartButton {
-      position: absolute;
-      padding: 10px 20px;
-      background-color: rgba(0, 0, 0, 0.4);
-      color: white;
-      font-size: 20px;
-      border-radius: 8px;
-      user-select: none;
-      -webkit-user-select: none;
-      opacity: 1;
-      transition: opacity 0.3s ease;
-      z-index: 3;
+    /* --- Steuer‑Buttons --- */
+    #pausePlayButton, #restartButton{
+      position:absolute; padding:10px 20px; border-radius:8px;
+      background:rgba(0,0,0,.4); color:white; font-size:20px; user-select:none;
+      transition:opacity .3s ease; z-index:3;
     }
-
-    #pausePlayButton.hidden, #restartButton.hidden {
-      opacity: 0;
-    }
-
-    #pausePlayButton {
-      bottom: 20px;
-      right: 20px;
-    }
-
-    #restartButton {
-      bottom: 20px;
-      left: 20px;
-    }
-
-    #pausePlayButton:active, #restartButton:active {
-      background-color: rgba(255, 255, 255, 0.2);
-    }
+    #pausePlayButton{ bottom:20px; right:20px; }
+    #restartButton  { bottom:20px; left:20px;  }
+    #pausePlayButton.hidden, #restartButton.hidden{ opacity:0; }
+    #pausePlayButton:active, #restartButton:active{ background:rgba(255,255,255,.2); }
   </style>
 </head>
 <body>
 
-<div id="overlay">Zum Starten tippen</div>
+  <!-- Overlay mit Platz für Screenshot + Text -->
+  <div id="overlay">
+    <img id="previewImage" alt="Vorschaubild">
+    <div id="overlayText">Zum Starten tippen</div>
+  </div>
 
-<video id="video" preload="auto">
-  <source src="https://gesellschaft-kultur-geschichte.de/wp-content/uploads/2_Allgemein_160903_final.mp4" type="video/mp4">
-  Dein Browser unterstützt das Video-Tag nicht.
-</video>
+  <!-- Video (mit CORS, damit Canvas erlaubt ist) -->
+  <video id="video" preload="auto" crossorigin="anonymous">
+    <source src="https://gesellschaft-kultur-geschichte.de/wp-content/uploads/2_Allgemein_160903_final.mp4" type="video/mp4">
+    Dein Browser unterstützt das Video‑Tag nicht.
+  </video>
 
-<div id="pausePlayButton">⏸</div>
-<div id="restartButton">⭯</div>
+  <!-- Steuer‑Buttons -->
+  <div id="pausePlayButton">⏸</div>
+  <div id="restartButton">⭯</div>
 
-<script>
-  const video = document.getElementById('video');
-  const overlay = document.getElementById('overlay');
-  const pausePlayButton = document.getElementById('pausePlayButton');
-  const restartButton = document.getElementById('restartButton');
+  <script>
+    const video          = document.getElementById('video');
+    const overlay        = document.getElementById('overlay');
+    const previewImage   = document.getElementById('previewImage');
+    const overlayText    = document.getElementById('overlayText');
+    const pausePlayBtn   = document.getElementById('pausePlayButton');
+    const restartBtn     = document.getElementById('restartButton');
+    let hideTimer;
 
-  let hideTimer;
+    /* ---------- Erstes Frame holen ---------- */
+    video.addEventListener('loadeddata', captureFirstFrame, { once:true });
 
-  function showButtonsTemporarily() {
-    pausePlayButton.classList.remove('hidden');
-    restartButton.classList.remove('hidden');
+    function captureFirstFrame(){
+      /* Canvas in Speicherkontext erzeugen */
+      const canvas = document.createElement('canvas');
+      canvas.width  = video.videoWidth  || 1280;   // Fallback‑Größen
+      canvas.height = video.videoHeight || 720;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => {
-      pausePlayButton.classList.add('hidden');
-      restartButton.classList.add('hidden');
-    }, 5000);
-  }
-
-  function startVideo() {
-    overlay.style.display = 'none';
-    video.style.display = 'block';
-    pausePlayButton.style.display = 'block';
-    restartButton.style.display = 'block';
-    video.muted = false;
-    video.volume = 1.0;
-    video.play();
-
-    showButtonsTemporarily();
-  }
-
-  // Startvideo nur beim ersten Touch
-  document.addEventListener('touchstart', startVideo, { once: true });
-
-  // Pause/Play
-  pausePlayButton.addEventListener('touchstart', function (event) {
-    event.stopPropagation();
-    if (video.paused) {
-      video.play();
-      pausePlayButton.textContent = '⏸';
-    } else {
-      video.pause();
-      pausePlayButton.textContent = '▶';
+      /* Data‑URL extrahieren und als Bild setzen */
+      try{
+        const dataURL = canvas.toDataURL('image/jpeg');
+        previewImage.src = dataURL;
+        overlay.style.background = 'transparent';
+      }catch(err){
+        /* CORS‑Problem? → einfach Overlay schwarz lassen */
+        console.warn('Screenshot nicht möglich (CORS):', err);
+      }
     }
-    showButtonsTemporarily();
-  });
 
-  // Restart (Zurück zum Overlay)
-  restartButton.addEventListener('touchstart', function (event) {
-    event.stopPropagation();
-    video.pause();
-    video.currentTime = 0;
-    video.style.display = 'none';
-    overlay.style.display = 'flex';
-    pausePlayButton.style.display = 'none';
-    restartButton.style.display = 'none';
-    pausePlayButton.textContent = '⏸';
-    clearTimeout(hideTimer);
-  });
+    /* ---------- Hilfsfunktionen ---------- */
+    function showButtonsTemporarily(){
+      pausePlayBtn.classList.remove('hidden');
+      restartBtn  .classList.remove('hidden');
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(()=> {
+        pausePlayBtn.classList.add('hidden');
+        restartBtn  .classList.add('hidden');
+      }, 5000);
+    }
 
-  // Buttons bei beliebigem Touch einblenden (außer Overlay)
-  document.addEventListener('touchstart', function () {
-    if (!overlay.style.display || overlay.style.display === 'flex') return;
-    showButtonsTemporarily();
-  });
+    function startVideo(){
+      overlay.style.display = 'none';
+      video.style.display   = 'block';
+      pausePlayBtn.style.display = restartBtn.style.display = 'block';
+      video.muted  = false;
+      video.volume = 1.0;
+      video.play();
+      showButtonsTemporarily();
+    }
 
-  // Video zu Ende → zurück zum Overlay
-  video.addEventListener('ended', () => {
-    video.currentTime = 0;
-    video.pause();
-    video.style.display = 'none';
-    pausePlayButton.style.display = 'none';
-    restartButton.style.display = 'none';
-    overlay.style.display = 'flex';
-    pausePlayButton.textContent = '⏸';
-    clearTimeout(hideTimer);
-  });
-</script>
+    /* ---------- Event‑Listener ---------- */
+
+    /* Erstes Tippen → Video starten */
+    document.addEventListener('touchstart', startVideo, { once:true });
+
+    /* Pause / Play */
+    pausePlayBtn.addEventListener('touchstart', (e)=>{
+      e.stopPropagation();
+      if(video.paused){
+        video.play();  pausePlayBtn.textContent='⏸';
+      }else{
+        video.pause(); pausePlayBtn.textContent='▶';
+      }
+      showButtonsTemporarily();
+    });
+
+    /* Restart → zurück zum Overlay */
+    restartBtn.addEventListener('touchstart', (e)=>{
+      e.stopPropagation();
+      video.pause(); video.currentTime = 0;
+      video.style.display = 'none';
+      pausePlayBtn.style.display = restartBtn.style.display = 'none';
+      pausePlayBtn.textContent = '⏸';
+      overlay.style.display = 'flex';
+      overlayText.textContent = 'Zum Starten tippen';
+      clearTimeout(hideTimer);
+    });
+
+    /* Irgendwo tippen → Buttons kurz einblenden (außer Overlay) */
+    document.addEventListener('touchstart', ()=>{
+      if(overlay.style.display === 'flex' || overlay.style.display === '') return;
+      showButtonsTemporarily();
+    });
+
+    /* Video zu Ende → zurück zum Overlay */
+    video.addEventListener('ended', ()=>{
+      video.pause(); video.currentTime = 0;
+      video.style.display = 'none';
+      pausePlayBtn.style.display = restartBtn.style.display = 'none';
+      pausePlayBtn.textContent = '⏸';
+      overlay.style.display = 'flex';
+      overlayText.textContent = 'Zum Starten tippen';
+      clearTimeout(hideTimer);
+    });
+  </script>
 
 </body>
 </html>
