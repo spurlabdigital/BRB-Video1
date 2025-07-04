@@ -35,27 +35,35 @@
       z-index: 2;
     }
 
-    #pausePlayButton {
+    #pausePlayButton, #restartButton {
       position: absolute;
-      bottom: 20px;
-      right: 20px;
       padding: 10px 20px;
       background-color: rgba(0, 0, 0, 0.4);
       color: white;
       font-size: 20px;
       border-radius: 8px;
-      z-index: 3;
       user-select: none;
       -webkit-user-select: none;
       opacity: 1;
       transition: opacity 0.3s ease;
+      z-index: 3;
     }
 
-    #pausePlayButton.hidden {
+    #pausePlayButton.hidden, #restartButton.hidden {
       opacity: 0;
     }
 
-    #pausePlayButton:active {
+    #pausePlayButton {
+      bottom: 20px;
+      right: 20px;
+    }
+
+    #restartButton {
+      bottom: 20px;
+      left: 20px;
+    }
+
+    #pausePlayButton:active, #restartButton:active {
       background-color: rgba(255, 255, 255, 0.2);
     }
   </style>
@@ -70,65 +78,83 @@
 </video>
 
 <div id="pausePlayButton">⏸</div>
+<div id="restartButton">⭯</div>
 
 <script>
   const video = document.getElementById('video');
   const overlay = document.getElementById('overlay');
-  const button = document.getElementById('pausePlayButton');
+  const pausePlayButton = document.getElementById('pausePlayButton');
+  const restartButton = document.getElementById('restartButton');
 
   let hideTimer;
 
-  function showButtonTemporarily() {
-    button.classList.remove('hidden');
+  function showButtonsTemporarily() {
+    pausePlayButton.classList.remove('hidden');
+    restartButton.classList.remove('hidden');
 
-    // Timer zurücksetzen
     clearTimeout(hideTimer);
     hideTimer = setTimeout(() => {
-      button.classList.add('hidden');
+      pausePlayButton.classList.add('hidden');
+      restartButton.classList.add('hidden');
     }, 5000);
   }
 
   function startVideo() {
     overlay.style.display = 'none';
     video.style.display = 'block';
-    button.style.display = 'block';
+    pausePlayButton.style.display = 'block';
+    restartButton.style.display = 'block';
     video.muted = false;
     video.volume = 1.0;
     video.play();
 
-    showButtonTemporarily();
+    showButtonsTemporarily();
   }
 
-  // Erstes Antippen startet das Video
+  // Startvideo nur beim ersten Touch
   document.addEventListener('touchstart', startVideo, { once: true });
 
-  // Pause/Play-Funktion
-  button.addEventListener('touchstart', function (event) {
-    event.stopPropagation(); // Verhindert, dass Touch auch das Video betrifft
+  // Pause/Play
+  pausePlayButton.addEventListener('touchstart', function (event) {
+    event.stopPropagation();
     if (video.paused) {
       video.play();
-      button.textContent = '⏸';
+      pausePlayButton.textContent = '⏸';
     } else {
       video.pause();
-      button.textContent = '▶';
+      pausePlayButton.textContent = '▶';
     }
-    showButtonTemporarily();
+    showButtonsTemporarily();
   });
 
-  // Wenn irgendwo sonst getippt wird: Button anzeigen und Timer neu starten
+  // Restart (Zurück zum Overlay)
+  restartButton.addEventListener('touchstart', function (event) {
+    event.stopPropagation();
+    video.pause();
+    video.currentTime = 0;
+    video.style.display = 'none';
+    overlay.style.display = 'flex';
+    pausePlayButton.style.display = 'none';
+    restartButton.style.display = 'none';
+    pausePlayButton.textContent = '⏸';
+    clearTimeout(hideTimer);
+  });
+
+  // Buttons bei beliebigem Touch einblenden (außer Overlay)
   document.addEventListener('touchstart', function () {
     if (!overlay.style.display || overlay.style.display === 'flex') return;
-    showButtonTemporarily();
+    showButtonsTemporarily();
   });
 
-  // Wenn Video endet: zurück zum Overlay
+  // Video zu Ende → zurück zum Overlay
   video.addEventListener('ended', () => {
     video.currentTime = 0;
     video.pause();
     video.style.display = 'none';
-    button.style.display = 'none';
+    pausePlayButton.style.display = 'none';
+    restartButton.style.display = 'none';
     overlay.style.display = 'flex';
-    button.textContent = '⏸';
+    pausePlayButton.textContent = '⏸';
     clearTimeout(hideTimer);
   });
 </script>
